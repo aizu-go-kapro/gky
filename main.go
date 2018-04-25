@@ -75,6 +75,7 @@ func (fc *FileConfig) GetLine() int {
 	return len(fc.contents)
 }
 
+// windowの設定、ファイルの表示をする
 func (v *View) Init(contents []string) error {
 	gc.Raw(true) // raw mode
 	gc.Echo(false)
@@ -95,10 +96,6 @@ func (v *View) Init(contents []string) error {
 		v.window.Print(contents[i])
 		v.window.Refresh()
 	}
-	//	for _, val := range contents {
-	//		v.window.Print(val)
-	//		v.window.Refresh()
-	//	}
 	v.window.Move(0, 0) // init locate of cursor
 	v.window.Resize(line, x)
 	v.window.Refresh()
@@ -106,6 +103,7 @@ func (v *View) Init(contents []string) error {
 	return nil
 }
 
+// Normal mode時のキー操作
 func (v *View) NormalCommand(ch gc.Key) error {
 	switch ch {
 	case gc.KEY_LEFT, 'h':
