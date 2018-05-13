@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
 	"os"
 
 	"github.com/gdamore/tcell"
-	"github.com/gdamore/tcell/encoding"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -19,12 +16,6 @@ const (
 	Visual
 )
 
-type FileInfo struct {
-	namepath string
-	file     *os.File
-	contents []string
-}
-
 type Cursor struct {
 	x     int
 	y     int
@@ -32,17 +23,18 @@ type Cursor struct {
 	max_y int
 }
 
-type Manager struct {
-	width  int
-	height int
-	file   FileInfo
+type FileManager struct {
+	width    int
+	height   int
+	namepath string
+	file     *os.File
 }
 
 type Editor struct {
-	cursor  Cursor
-	mode    Mode
-	manager Manager
-	screen  tcell.Screen
+	cursor Cursor
+	mode   Mode
+	fm     FileManager
+	screen tcell.Screen
 }
 
 func (e *Editor) Open(filename string) error {
@@ -50,27 +42,23 @@ func (e *Editor) Open(filename string) error {
 	if err != nil {
 		return err
 	}
+	e.fm.namepath = name
 
-	file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0755)
+	f, err := os.Open(name)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer f.Close()
 
-	scanner := bufio.NewScanner(file)
-	var str []string
-	for scanner.Scan() {
-		str = append(str, scanner.Text()+"\n")
-	}
-	if err := scanner.Err(); err != nil {
-		return errors.New(fmt.Sprintf("scanner err:", err))
+	info, err := os.Stat(name)
+	if err != nil {
+		return err
 	}
 
-	e.manager.file = FileInfo{
-		namepath: name,
-		file:     file,
-		contents: str,
+	if info.IsDir() {
+		return fmt.Errorf("%s is a directory", name)
 	}
+	e.fm.file = f
 
 	return nil
 }
@@ -91,33 +79,29 @@ func (e *Editor) Init() error {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cursor:  Cursor{x: 0, y: 0},
-		mode:    Normal,
-		manager: Manager{},
+		cursor: Cursor{x: 0, y: 0},
+		mode:   Normal,
+		fm:     FileManager{},
 	}
 }
 
 func main() {
-	encoding.Register()
-	tcell.SetEncodingFallback(tcell.EncodingFallbackASCII)
-
-	e := NewEditor()
-
-	if err := e.Init(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-	defer e.screen.Fini()
-
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: command <filename>\n")
 		os.Exit(1)
 	}
 
+	e := NewEditor()
 	if err := e.Open(os.Args[1]); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
+
+	if err := e.Init(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+	defer e.screen.Fini()
 
 	quit := make(chan struct{})
 	go func() {
