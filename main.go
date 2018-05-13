@@ -4,13 +4,23 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 
-	gc "github.com/rthornton128/goncurses"
+	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/encoding"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
-type FileConfig struct {
+type Mode int
+
+const (
+	Normal Mode = iota
+	Insert
+	Visual
+)
+
+type FileInfo struct {
+	namepath string
 	file     *os.File
 	contents []string
 }
@@ -22,37 +32,28 @@ type Cursor struct {
 	max_y int
 }
 
-type Mode int
-
-const (
-	Normal Mode = iota
-	Insert
-	Visual
-)
-
-func (m Mode) String() string {
-	switch m {
-	case Normal:
-		return "Normal"
-	case Insert:
-		return "Insert"
-	case Visual:
-		return "Visual"
-	default:
-		return "non-match"
-	}
+type Manager struct {
+	width  int
+	height int
+	file   FileInfo
 }
 
-type View struct {
-	cursor Cursor
-	mode   Mode
-	window *gc.Window
+type Editor struct {
+	cursor  Cursor
+	mode    Mode
+	manager Manager
+	screen  tcell.Screen
 }
 
-func OpenFile(filename string) (*FileConfig, error) {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+func (e *Editor) Open(filename string) error {
+	name, err := homedir.Expand(filename)
 	if err != nil {
-		return nil, err
+		return err
+	}
+
+	file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		return err
 	}
 	defer file.Close()
 
@@ -62,116 +63,83 @@ func OpenFile(filename string) (*FileConfig, error) {
 		str = append(str, scanner.Text()+"\n")
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, errors.New(fmt.Sprintf("scanner err:", err))
+		return errors.New(fmt.Sprintf("scanner err:", err))
 	}
 
-	return &FileConfig{
+	e.manager.file = FileInfo{
+		namepath: name,
 		file:     file,
 		contents: str,
-	}, nil
+	}
+
+	return nil
 }
 
-func (fc *FileConfig) GetLine() int {
-	return len(fc.contents)
-}
-
-// windowの設定、ファイルの表示をする
-func (v *View) Init(contents []string) error {
-	gc.Raw(true) // raw mode
-	gc.Echo(false)
-	if err := gc.HalfDelay(20); err != nil {
+//TODO init screen init
+func (e *Editor) Init() error {
+	s, err := tcell.NewScreen()
+	if err != nil {
 		return err
 	}
-	gc.MouseMask(gc.M_ALL, nil)
-	v.window.Keypad(true)
-	v.window.ScrollOk(true)
-	line, x := v.window.MaxYX() // ncurses_getmaxyx
-	if line > len(contents) {
-		line = len(contents)
-	}
-	v.cursor.max_y = line - 1
-	v.cursor.max_x = x - 1
+	e.screen = s
 
-	for i := 0; i < line; i++ {
-		v.window.Print(contents[i])
-		v.window.Refresh()
+	if err := e.screen.Init(); err != nil {
+		return err
 	}
-	v.window.Move(0, 0) // init locate of cursor
-	v.window.Resize(line, x)
-	v.window.Refresh()
-
 	return nil
 }
 
-// Normal mode時のキー操作
-func (v *View) NormalCommand(ch gc.Key) error {
-	switch ch {
-	case gc.KEY_LEFT, 'h':
-		if v.cursor.x > 0 {
-			v.cursor.x--
-		}
-	case gc.KEY_RIGHT, 'l':
-		if v.cursor.x < v.cursor.max_x {
-			v.cursor.x++
-		}
-	case gc.KEY_UP, 'k':
-		if v.cursor.y > 0 {
-			v.cursor.y--
-		}
-	case gc.KEY_DOWN, 'j', '\n':
-		if v.cursor.y < v.cursor.max_y {
-			v.cursor.y++
-		}
-	}
-	v.window.Move(v.cursor.y, v.cursor.x)
-	return nil
-}
-
-func NewView(w *gc.Window) *View {
-	return &View{
-		cursor: Cursor{x: 0, y: 0},
-		mode:   Normal,
-		window: w, //window の数によっては増やす(mapでもいい？)
+func NewEditor() *Editor {
+	return &Editor{
+		cursor:  Cursor{x: 0, y: 0},
+		mode:    Normal,
+		manager: Manager{},
 	}
 }
 
 func main() {
+	encoding.Register()
+	tcell.SetEncodingFallback(tcell.EncodingFallbackASCII)
+
+	e := NewEditor()
+
+	if err := e.Init(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+	defer e.screen.Fini()
+
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: command <filename>\n")
 		os.Exit(1)
 	}
 
-	stdscr, err := gc.Init()
-	if err != nil {
-		log.Fatal("init", err)
-	}
-	gc.StartColor() // start_color
-	defer gc.End()  // endwin
-
-	fc, err := OpenFile(os.Args[1])
-	if err != nil {
-		log.Fatal(err)
+	if err := e.Open(os.Args[1]); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 
-	view := NewView(stdscr)
-	if err := view.Init(fc.contents); err != nil {
-		log.Fatal(err)
-	}
-
-	for {
-		ch := view.window.GetChar()
-		if ch == 'q' {
-			break
-		}
-		switch view.mode {
-		case Normal:
-			if err := view.NormalCommand(ch); err != nil {
-				log.Fatal(err)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			ev := e.screen.PollEvent()
+			switch ev := ev.(type) {
+			case *tcell.EventKey:
+				if ev.Key() == tcell.KeyEscape {
+					close(quit)
+				} else if ev.Key() == tcell.KeyCtrlC {
+					close(quit)
+				}
+			default:
 			}
-		case Insert:
-		case Visual:
-		default:
-			return
+		}
+	}()
+
+loop:
+	for {
+		select {
+		case <-quit:
+			break loop
 		}
 	}
 }
