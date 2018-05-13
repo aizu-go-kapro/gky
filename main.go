@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/encoding"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -17,25 +19,33 @@ const (
 )
 
 type Cursor struct {
-	x     int
-	y     int
-	max_x int
-	max_y int
+	x int32
+	y int32
 }
 
 type FileManager struct {
-	width    int
-	height   int
 	namepath string
 	file     *os.File
+	bytes    []byte
+	size     int
+}
+
+type Window struct {
+	width  int
+	height int
+	screen tcell.Screen
 }
 
 type Editor struct {
 	cursor Cursor
 	mode   Mode
 	fm     FileManager
-	screen tcell.Screen
+	win    Window
 }
+
+const (
+	BUFSIZE = math.MaxInt32
+)
 
 func (e *Editor) Open(filename string) error {
 	name, err := homedir.Expand(filename)
@@ -59,21 +69,42 @@ func (e *Editor) Open(filename string) error {
 		return fmt.Errorf("%s is a directory", name)
 	}
 	e.fm.file = f
+	if err := e.fm.Read(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-//TODO init screen init
+func (f *FileManager) Read() error {
+	buf := make([]byte, BUFSIZE)
+	n, err := f.file.Read(buf)
+	if err != nil {
+		return err
+	}
+	f.size = n
+	f.bytes = buf[:n]
+
+	return nil
+}
+
+//TODO
 func (e *Editor) Init() error {
 	s, err := tcell.NewScreen()
 	if err != nil {
 		return err
 	}
-	e.screen = s
-
-	if err := e.screen.Init(); err != nil {
+	e.win.screen = s
+	if err := e.win.screen.Init(); err != nil {
 		return err
 	}
+
+	w, h := s.Size()
+	e.win.width = w - 1
+	e.win.height = h - 1
+
+	e.win.screen.SetContent(e.win.width, e.win.height, rune(e.fm.bytes[0]), nil, tcell.StyleDefault)
+	e.win.screen.Show()
 	return nil
 }
 
@@ -82,10 +113,14 @@ func NewEditor() *Editor {
 		cursor: Cursor{x: 0, y: 0},
 		mode:   Normal,
 		fm:     FileManager{},
+		win:    Window{},
 	}
 }
 
 func main() {
+	encoding.Register()
+	tcell.SetEncodingFallback(tcell.EncodingFallbackASCII)
+
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: command <filename>\n")
 		os.Exit(1)
@@ -101,12 +136,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
-	defer e.screen.Fini()
+	defer e.win.screen.Fini()
 
 	quit := make(chan struct{})
 	go func() {
 		for {
-			ev := e.screen.PollEvent()
+			ev := e.win.screen.PollEvent()
 			switch ev := ev.(type) {
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyEscape {
