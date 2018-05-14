@@ -33,6 +33,7 @@ type FileManager struct {
 type Window struct {
 	width  int
 	height int
+	full   int
 	screen tcell.Screen
 }
 
@@ -88,6 +89,29 @@ func (f *FileManager) Read() error {
 	return nil
 }
 
+func (w *Window) Show(bytes []byte) {
+	var max_win int
+	w.screen.Clear()
+	count := 0
+	h := 0
+	max_win = w.full
+	if w.full > len(bytes) {
+		max_win = len(bytes)
+	}
+
+	for i := 0; i < max_win; i++ {
+		if w.width == count || bytes[i] == byte(10) {
+			h++
+			count = 0
+			w.screen.SetContent(count, h, rune(bytes[i]), nil, tcell.StyleDefault)
+			continue
+		}
+		w.screen.SetContent(count, h, rune(bytes[i]), nil, tcell.StyleDefault)
+		count++
+	}
+	w.screen.Show()
+}
+
 //TODO
 func (e *Editor) Init() error {
 	s, err := tcell.NewScreen()
@@ -102,9 +126,9 @@ func (e *Editor) Init() error {
 	w, h := s.Size()
 	e.win.width = w - 1
 	e.win.height = h - 1
+	e.win.full = e.win.width * e.win.height
 
-	e.win.screen.SetContent(e.win.width, e.win.height, rune(e.fm.bytes[0]), nil, tcell.StyleDefault)
-	e.win.screen.Show()
+	e.win.Show(e.fm.bytes)
 	return nil
 }
 
