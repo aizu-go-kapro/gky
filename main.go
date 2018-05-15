@@ -1,26 +1,14 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
-	"log"
+	"math"
 	"os"
 
-	gc "github.com/rthornton128/goncurses"
+	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/encoding"
+	homedir "github.com/mitchellh/go-homedir"
 )
-
-type FileConfig struct {
-	file     *os.File
-	contents []string
-}
-
-type Cursor struct {
-	x     int
-	y     int
-	max_x int
-	max_y int
-}
 
 type Mode int
 
@@ -30,148 +18,229 @@ const (
 	Visual
 )
 
-func (m Mode) String() string {
-	switch m {
-	case Normal:
-		return "Normal"
-	case Insert:
-		return "Insert"
-	case Visual:
-		return "Visual"
-	default:
-		return "non-match"
-	}
+type Cursor struct {
+	x int
+	y int
 }
 
-type View struct {
+type FileManager struct {
+	namepath string
+	file     *os.File
+	bytes    []byte
+	size     int
+}
+
+type Window struct {
+	width  int
+	height int
+	full   int
 	cursor Cursor
-	mode   Mode
-	window *gc.Window
+	screen tcell.Screen
 }
 
-func OpenFile(filename string) (*FileConfig, error) {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+type Editor struct {
+	mode Mode
+	fm   FileManager
+	win  Window
+}
+
+const (
+	BUFSIZE = math.MaxInt32
+)
+
+func (e *Editor) Open(filename string) error {
+	name, err := homedir.Expand(filename)
 	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	var str []string
-	for scanner.Scan() {
-		str = append(str, scanner.Text()+"\n")
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, errors.New(fmt.Sprintf("scanner err:", err))
-	}
-
-	return &FileConfig{
-		file:     file,
-		contents: str,
-	}, nil
-}
-
-func (fc *FileConfig) GetLine() int {
-	return len(fc.contents)
-}
-
-// windowの設定、ファイルの表示をする
-func (v *View) Init(contents []string) error {
-	gc.Raw(true) // raw mode
-	gc.Echo(false)
-	if err := gc.HalfDelay(20); err != nil {
 		return err
 	}
-	gc.MouseMask(gc.M_ALL, nil)
-	v.window.Keypad(true)
-	v.window.ScrollOk(true)
-	line, x := v.window.MaxYX() // ncurses_getmaxyx
-	if line > len(contents) {
-		line = len(contents)
-	}
-	v.cursor.max_y = line - 1
-	v.cursor.max_x = x - 1
+	e.fm.namepath = name
 
-	for i := 0; i < line; i++ {
-		v.window.Print(contents[i])
-		v.window.Refresh()
+	f, err := os.Open(name)
+	if err != nil {
+		return err
 	}
-	v.window.Move(0, 0) // init locate of cursor
-	v.window.Resize(line, x)
-	v.window.Refresh()
+	defer f.Close()
+
+	info, err := os.Stat(name)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		return fmt.Errorf("%s is a directory", name)
+	}
+	e.fm.file = f
+	if err := e.fm.Read(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-// Normal mode時のキー操作
-func (v *View) NormalCommand(ch gc.Key) error {
-	switch ch {
-	case gc.KEY_LEFT, 'h':
-		if v.cursor.x > 0 {
-			v.cursor.x--
-		}
-	case gc.KEY_RIGHT, 'l':
-		if v.cursor.x < v.cursor.max_x {
-			v.cursor.x++
-		}
-	case gc.KEY_UP, 'k':
-		if v.cursor.y > 0 {
-			v.cursor.y--
-		}
-	case gc.KEY_DOWN, 'j', '\n':
-		if v.cursor.y < v.cursor.max_y {
-			v.cursor.y++
-		}
+func (f *FileManager) Read() error {
+	buf := make([]byte, BUFSIZE)
+	n, err := f.file.Read(buf)
+	if err != nil {
+		return err
 	}
-	v.window.Move(v.cursor.y, v.cursor.x)
+	f.size = n
+	f.bytes = buf[:n]
+
 	return nil
 }
 
-func NewView(w *gc.Window) *View {
-	return &View{
-		cursor: Cursor{x: 0, y: 0},
-		mode:   Normal,
-		window: w, //window の数によっては増やす(mapでもいい？)
+func (w *Window) Show(bytes []byte) {
+	var max_win int
+	w.screen.Clear()
+	count := 0
+	h := 0
+	max_win = w.full
+	if w.full > len(bytes) {
+		max_win = len(bytes)
+	}
+
+	for i := 0; i < max_win; i++ {
+		if w.width == count || bytes[i] == byte(10) {
+			h++
+			count = 0
+			w.screen.SetContent(count, h, rune(bytes[i]), nil, tcell.StyleDefault)
+			continue
+		}
+		w.screen.SetContent(count, h, rune(bytes[i]), nil, tcell.StyleDefault)
+		count++
+	}
+	w.screen.Show()
+}
+
+func (w *Window) InitCursor() {
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+//TODO show cursor
+func (e *Editor) Init() error {
+	s, err := tcell.NewScreen()
+	if err != nil {
+		return err
+	}
+	e.win.screen = s
+	if err := e.win.screen.Init(); err != nil {
+		return err
+	}
+
+	w, h := s.Size()
+	e.win.width = w - 1
+	e.win.height = h - 1
+	e.win.full = e.win.width * e.win.height
+
+	e.win.Show(e.fm.bytes)
+	e.win.InitCursor()
+	return nil
+}
+
+func NewEditor() *Editor {
+	return &Editor{
+		mode: Normal,
+		fm:   FileManager{},
+		win:  Window{cursor: Cursor{x: 0, y: 0}},
 	}
 }
 
 func main() {
+	encoding.Register()
+	tcell.SetEncodingFallback(tcell.EncodingFallbackASCII)
+
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: command <filename>\n")
 		os.Exit(1)
 	}
 
-	stdscr, err := gc.Init()
-	if err != nil {
-		log.Fatal("init", err)
-	}
-	gc.StartColor() // start_color
-	defer gc.End()  // endwin
-
-	fc, err := OpenFile(os.Args[1])
-	if err != nil {
-		log.Fatal(err)
+	e := NewEditor()
+	if err := e.Open(os.Args[1]); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
 	}
 
-	view := NewView(stdscr)
-	if err := view.Init(fc.contents); err != nil {
-		log.Fatal(err)
+	if err := e.Init(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
 	}
+	defer e.win.screen.Fini()
 
-	for {
-		ch := view.window.GetChar()
-		if ch == 'q' {
-			break
-		}
-		switch view.mode {
-		case Normal:
-			if err := view.NormalCommand(ch); err != nil {
-				log.Fatal(err)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			switch e.mode {
+			case Normal:
+				ev := e.win.screen.PollEvent()
+				switch ev := ev.(type) {
+				case *tcell.EventKey:
+					event, err := e.HandleEvent(ev.Key())
+					if err != nil {
+						close(quit)
+					} else if event == "quit" {
+						close(quit)
+					}
+				}
+			case Insert:
+			case Visual:
 			}
-		case Insert:
-		case Visual:
-		default:
-			return
+		}
+	}()
+
+loop:
+	for {
+		select {
+		case <-quit:
+			break loop
 		}
 	}
+}
+
+func (w *Window) CursorLeft() {
+	if w.cursor.x > 0 {
+		w.cursor.x--
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+func (w *Window) CursorRight() {
+	if w.cursor.x < w.width {
+		w.cursor.x++
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+func (w *Window) CursorUp() {
+	if w.cursor.y > 0 {
+		w.cursor.y--
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+func (w *Window) CursorDown() {
+	if w.cursor.y < w.height {
+		w.cursor.y++
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+func (e *Editor) HandleEvent(key tcell.Key) (string, error) {
+	switch key {
+	case tcell.KeyEscape, tcell.KeyCtrlC:
+		return "quit", nil
+	case tcell.KeyBackspace, tcell.KeyLeft:
+		e.win.CursorLeft()
+	case tcell.KeyRight:
+		e.win.CursorRight()
+	case tcell.KeyUp:
+		e.win.CursorUp()
+	case tcell.KeyDown, tcell.KeyEnter:
+		e.win.CursorDown()
+	}
+
+	return "", nil
 }
