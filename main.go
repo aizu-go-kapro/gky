@@ -19,8 +19,8 @@ const (
 )
 
 type Cursor struct {
-	x int32
-	y int32
+	x int
+	y int
 }
 
 type FileManager struct {
@@ -34,14 +34,14 @@ type Window struct {
 	width  int
 	height int
 	full   int
+	cursor Cursor
 	screen tcell.Screen
 }
 
 type Editor struct {
-	cursor Cursor
-	mode   Mode
-	fm     FileManager
-	win    Window
+	mode Mode
+	fm   FileManager
+	win  Window
 }
 
 const (
@@ -112,7 +112,12 @@ func (w *Window) Show(bytes []byte) {
 	w.screen.Show()
 }
 
-//TODO
+func (w *Window) InitCursor() {
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+//TODO show cursor
 func (e *Editor) Init() error {
 	s, err := tcell.NewScreen()
 	if err != nil {
@@ -129,15 +134,15 @@ func (e *Editor) Init() error {
 	e.win.full = e.win.width * e.win.height
 
 	e.win.Show(e.fm.bytes)
+	e.win.InitCursor()
 	return nil
 }
 
 func NewEditor() *Editor {
 	return &Editor{
-		cursor: Cursor{x: 0, y: 0},
-		mode:   Normal,
-		fm:     FileManager{},
-		win:    Window{},
+		mode: Normal,
+		fm:   FileManager{},
+		win:  Window{cursor: Cursor{x: 0, y: 0}},
 	}
 }
 
@@ -165,15 +170,20 @@ func main() {
 	quit := make(chan struct{})
 	go func() {
 		for {
-			ev := e.win.screen.PollEvent()
-			switch ev := ev.(type) {
-			case *tcell.EventKey:
-				if ev.Key() == tcell.KeyEscape {
-					close(quit)
-				} else if ev.Key() == tcell.KeyCtrlC {
-					close(quit)
+			switch e.mode {
+			case Normal:
+				ev := e.win.screen.PollEvent()
+				switch ev := ev.(type) {
+				case *tcell.EventKey:
+					event, err := e.HandleEvent(ev.Key())
+					if err != nil {
+						close(quit)
+					} else if event == "quit" {
+						close(quit)
+					}
 				}
-			default:
+			case Insert:
+			case Visual:
 			}
 		}
 	}()
@@ -185,4 +195,52 @@ loop:
 			break loop
 		}
 	}
+}
+
+func (w *Window) CursorLeft() {
+	if w.cursor.x > 0 {
+		w.cursor.x--
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+func (w *Window) CursorRight() {
+	if w.cursor.x < w.width {
+		w.cursor.x++
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+func (w *Window) CursorUp() {
+	if w.cursor.y > 0 {
+		w.cursor.y--
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+
+func (w *Window) CursorDown() {
+	if w.cursor.y < w.height {
+		w.cursor.y++
+	}
+	w.screen.ShowCursor(w.cursor.x, w.cursor.y)
+	w.screen.Show()
+}
+func (e *Editor) HandleEvent(key tcell.Key) (string, error) {
+	switch key {
+	case tcell.KeyEscape, tcell.KeyCtrlC:
+		return "quit", nil
+	case tcell.KeyBackspace, tcell.KeyLeft:
+		e.win.CursorLeft()
+	case tcell.KeyRight:
+		e.win.CursorRight()
+	case tcell.KeyUp:
+		e.win.CursorUp()
+	case tcell.KeyDown, tcell.KeyEnter:
+		e.win.CursorDown()
+	}
+
+	return "", nil
 }
