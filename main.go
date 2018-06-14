@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/gdamore/tcell"
-	"github.com/gdamore/tcell/encoding"
 )
 
 var (
@@ -14,38 +13,6 @@ var (
 	screenWidth               = 0
 	screenHeight              = 0
 )
-
-func initScreen() error {
-	var err error
-	screen, err = tcell.NewScreen()
-	if err != nil {
-		return err
-	}
-
-	if err = screen.Init(); err != nil {
-		return err
-	}
-
-	encoding.Register()
-	tcell.SetEncodingFallback(tcell.EncodingFallbackASCII)
-	screen.SetStyle(tcell.StyleDefault)
-	screen.Clear()
-
-	screenWidth, screenHeight = screen.Size()
-
-	return nil
-}
-
-func initEvent() {
-	go func() {
-		for {
-			if screen == nil {
-				break
-			}
-			Events <- screen.PollEvent()
-		}
-	}()
-}
 
 func main() {
 	os.Exit(run(os.Args))
@@ -64,6 +31,11 @@ func run(args []string) int {
 	defer screen.Fini()
 
 	initEvent()
+
+	if err := initBuffer(args[1]); err != nil {
+		fmt.Fprint(os.Stderr, err)
+		return 1
+	}
 
 loop:
 	for {
