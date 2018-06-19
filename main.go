@@ -25,15 +25,21 @@ func run(args []string) int {
 	}
 
 	if err := initScreen(); err != nil {
-		fmt.Fprint(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 	defer screen.Fini()
 
 	initEvent()
 
-	if err := initBuffer(args[1]); err != nil {
-		fmt.Fprint(os.Stderr, err)
+	buffer, err := initBuffer(args[1])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+
+	if err := buffer.initView(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 
