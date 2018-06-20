@@ -22,6 +22,7 @@ func initScreen() error {
 	screen.Clear()
 
 	screenWidth, screenHeight = screen.Size()
+	screen.Resize(0, 0, screenWidth, screenHeight-2)
 
 	return nil
 }
@@ -47,23 +48,9 @@ func initBuffer(path string) (*Buffer, error) {
 	return buf, nil
 }
 
-func (buf *Buffer) initView() error {
-	h := len(buf.data)
-	if screenHeight < h {
-		h = screenHeight
-	}
+func initView(buf *Buffer) (*View, error) {
+	view := NewView(buf)
+	view.render()
 
-	for i := 0; i < h; i++ {
-		w := len(buf.data[i])
-		if screenWidth < w {
-			w = screenWidth
-		}
-		for j := 0; j < w; j++ {
-			screen.SetContent(j, i, buf.data[i][j], nil, tcell.StyleDefault)
-		}
-	}
-
-	screen.ShowCursor(buf.Cursor.x, buf.Cursor.y)
-	screen.Show()
-	return nil
+	return view, nil
 }

@@ -32,13 +32,14 @@ func run(args []string) int {
 
 	initEvent()
 
-	buffer, err := initBuffer(args[1])
+	b, err := initBuffer(args[1])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 
-	if err := buffer.initView(); err != nil {
+	view, err := initView(b)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -52,6 +53,9 @@ loop:
 				if ev.Key() == tcell.KeyCtrlQ {
 					break loop
 				}
+			case *tcell.EventResize:
+				screenWidth, screenHeight = screen.Size()
+				view.render()
 			}
 		}
 	}
