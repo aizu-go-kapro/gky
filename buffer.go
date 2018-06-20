@@ -5,7 +5,6 @@ import (
 	"math"
 	"os"
 
-	"github.com/gdamore/tcell"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -23,6 +22,10 @@ type Buffer struct {
 	Name   string
 	path   string
 	Cursor *Location
+}
+
+func NewLocation(l, c int) *Location {
+	return &Location{x: l, y: c}
 }
 
 func (buf *Buffer) Read(f *os.File) error {
@@ -86,30 +89,6 @@ func (buf *Buffer) fileManage(path string) error {
 	return nil
 }
 
-func (buf *Buffer) initView() error {
-	h := len(buf.data)
-	if screenHeight < h {
-		h = screenHeight
-	}
-
-	for i := 0; i < h; i++ {
-		w := len(buf.data[i])
-		if screenWidth < w {
-			w = screenWidth
-		}
-		for j := 0; j < w; j++ {
-			screen.SetContent(j, i, buf.data[i][j], nil, tcell.StyleDefault)
-		}
-	}
-	screen.Show()
-	return nil
-}
-
-func initBuffer(path string) (*Buffer, error) {
-	buf := new(Buffer)
-	if err := buf.fileManage(path); err != nil {
-		return nil, err
-	}
-
-	return buf, nil
+func (buf *Buffer) setCursor(line, offset int) {
+	screen.ShowCursor(buf.Cursor.x+offset, buf.Cursor.y+line)
 }
