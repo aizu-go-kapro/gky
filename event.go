@@ -2,10 +2,12 @@ package main
 
 import "github.com/gdamore/tcell"
 
-func (v *View) EventHandle(key tcell.Key) error {
+type MoveC interface{}
+
+func (v *View) EventHandle(ev *tcell.EventKey) error {
 	switch v.mode {
 	case Normal:
-		if err := v.NormalEvent(key); err != nil {
+		if err := v.NormalEvent(ev); err != nil {
 			return err
 		}
 	case Insert:
@@ -14,16 +16,21 @@ func (v *View) EventHandle(key tcell.Key) error {
 	return nil
 }
 
-func (v *View) NormalEvent(key tcell.Key) error {
-	switch key {
-	case tcell.KeyBackspace, tcell.KeyLeft, 'h', tcell.KeyRight, 'l', tcell.KeyUp, 'k', tcell.KeyDown, 'j', tcell.KeyEnter:
-		v.buf.CursorMove(key)
+func (v *View) NormalEvent(ev *tcell.EventKey) error {
+	switch ev.Key() {
+	case tcell.KeyBackspace, tcell.KeyLeft, tcell.KeyRight, tcell.KeyUp, tcell.KeyDown, tcell.KeyEnter:
+		v.buf.CursorMove(MoveC(ev.Key()))
 	default:
+	}
+
+	switch ev.Rune() {
+	case 'j', 'h', 'l', 'k':
+		v.buf.CursorMove(MoveC(ev.Rune()))
 	}
 	return nil
 }
 
-func (buf *Buffer) CursorMove(key tcell.Key) {
+func (buf *Buffer) CursorMove(key MoveC) {
 	switch key {
 	case tcell.KeyBackspace, tcell.KeyLeft, 'h':
 		buf.Cursor.x--

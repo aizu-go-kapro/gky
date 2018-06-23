@@ -52,7 +52,7 @@ loop:
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyCtrlQ {
 					break loop
-				} else if err := view.EventHandle(ev.Key()); err != nil {
+				} else if err := view.EventHandle(ev); err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					break loop
 				}
