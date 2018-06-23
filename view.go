@@ -30,6 +30,7 @@ func (v *View) render() {
 		}
 	}
 
-	v.buf.setCursor(0, 0)
+	//TODO render時のcursor位置を0,0では無くす
+	v.buf.setCursor()
 	screen.Show()
 }

@@ -89,6 +89,10 @@ func (buf *Buffer) fileManage(path string) error {
 	return nil
 }
 
-func (buf *Buffer) setCursor(line, offset int) {
-	screen.ShowCursor(buf.Cursor.x+offset, buf.Cursor.y+line)
+func (buf *Buffer) setCursor() {
+	screen.ShowCursor(buf.Cursor.x, buf.Cursor.y)
+}
+
+func (buf *Buffer) getLine() int {
+	return len(buf.data)
 }
