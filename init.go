@@ -47,10 +47,3 @@ func initBuffer(path string) (*Buffer, error) {
 
 	return buf, nil
 }
-
-func initView(buf *Buffer) (*View, error) {
-	view := NewView(buf)
-	view.render()
-
-	return view, nil
-}

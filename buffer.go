@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 
+	"github.com/gdamore/tcell"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -18,10 +19,11 @@ type Location struct {
 }
 
 type Buffer struct {
-	data   [][]rune
-	Name   string
-	path   string
-	Cursor *Location
+	data     [][]rune
+	Name     string
+	path     string
+	Cursor   *Location
+	render_y int
 }
 
 func NewLocation(l, c int) *Location {
@@ -89,8 +91,28 @@ func (buf *Buffer) fileManage(path string) error {
 	return nil
 }
 
-func (buf *Buffer) setCursor() {
-	screen.ShowCursor(buf.Cursor.x, buf.Cursor.y)
+func (buf *Buffer) Render(from int) {
+	screen.Clear()
+	buf.render(from)
+	screen.Show()
+}
+
+func (buf *Buffer) render(from int) {
+	h := len(buf.data[from:])
+	if screenHeight < h {
+		h = screenHeight
+	}
+
+	for i := 0; i < h; i++ {
+		w := len(buf.data[from])
+		if screenWidth < w {
+			w = screenWidth
+		}
+		for j := 0; j < w; j++ {
+			screen.SetContent(j, i, buf.data[from][j], nil, tcell.StyleDefault)
+		}
+		from++
+	}
 }
 
 func (buf *Buffer) getLine() int {

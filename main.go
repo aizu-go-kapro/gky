@@ -38,8 +38,8 @@ func run(args []string) int {
 		return 1
 	}
 
-	view, err := initView(b)
-	if err != nil {
+	view := NewView(b)
+	if err := view.Init(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -58,7 +58,7 @@ loop:
 				}
 			case *tcell.EventResize:
 				screenWidth, screenHeight = screen.Size()
-				view.render()
+				view.buf.Render(0)
 			}
 		}
 	}
