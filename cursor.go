@@ -4,7 +4,7 @@ import "github.com/gdamore/tcell"
 
 func (buf *Buffer) CursorMove(key MoveC) {
 	switch key {
-	case tcell.KeyBackspace, tcell.KeyLeft, 'h':
+	case tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyLeft, 'h':
 		buf.Cursor.x--
 	case tcell.KeyRight, 'l':
 		buf.Cursor.x++
@@ -22,13 +22,6 @@ func (buf *Buffer) CursorMove(key MoveC) {
 }
 
 func (buf *Buffer) scrollCursor() {
-	//TODO: x < 0 -> y--, x > width -> y++
-	if buf.Cursor.x < 0 {
-		buf.Cursor.x = 0
-	} else if buf.Cursor.x >= screenWidth {
-		buf.Cursor.x = screenWidth - 1
-	}
-
 	if buf.Cursor.y < 0 {
 		buf.Cursor.y = 0
 		buf.CursorRender()
@@ -36,10 +29,16 @@ func (buf *Buffer) scrollCursor() {
 		buf.Cursor.y = screenHeight - 1
 		buf.CursorRender()
 	}
+
+	if buf.Cursor.x < 0 {
+		buf.Cursor.x = 0
+	} else if buf.Cursor.x >= len(buf.data[buf.render_y]) {
+		buf.Cursor.x = len(buf.data[buf.render_y]) - 1
+	}
 }
 
 func (buf *Buffer) CursorRender() {
-	line := buf.getLine()
+	line := buf.getLine() - 1
 	if buf.render_y <= line && buf.render_y >= 0 {
 		buf.Render(buf.render_y - buf.Cursor.y)
 	} else if buf.render_y > line {
