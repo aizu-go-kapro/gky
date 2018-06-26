@@ -30,6 +30,21 @@ func NewLocation(l, c int) *Location {
 	return &Location{x: l, y: c}
 }
 
+func (buf *Buffer) Insert(data []rune) {
+	x, y := buf.Cursor.x, buf.Cursor.y
+
+	for i := len(data) - 1; i >= 0; i-- {
+		char := data[i]
+		if byte(char) == '\n' {
+			tmp := append([]rune(nil), buf.data[y][x:]...)
+			buf.data[y] = buf.data[y][:x]
+			buf.data = append(buf.data[:y+1], append([][]rune{tmp}, buf.data[y+1:]...)...)
+		} else {
+			buf.data[y] = append(buf.data[y][:x], append([]rune{char}, buf.data[y][x:]...)...)
+		}
+	}
+}
+
 func (buf *Buffer) Read(f *os.File) error {
 	b := make([]byte, BUFSIZE)
 	n, err := f.Read(b)
