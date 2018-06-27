@@ -2,6 +2,9 @@ package main
 
 import "github.com/gdamore/tcell"
 
+// by tenntenn もうちょい抽象化したほうが良さそう。tcellに依存し過ぎな気がする。
+// キーコードを使うのではなく、それを対応付けたものを定義したほうがいいかな
+// 例えば、ユーザが好きにキーバインドを変える機能を追加したときに変更点を減らすにはどうすればよいか？
 func (buf *Buffer) CursorMove(key MoveC) {
 	switch key {
 	case tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyLeft, 'h':

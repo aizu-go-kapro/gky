@@ -8,6 +8,7 @@ const (
 	Visual
 )
 
+// by tenntenn 構造体のフィールドにしてテストしやすくしよう
 var (
 	mode Mode
 )
