@@ -8,10 +8,6 @@ const (
 	Visual
 )
 
-var (
-	mode Mode
-)
-
 func (m Mode) String() string {
 	switch m {
 	case Normal:

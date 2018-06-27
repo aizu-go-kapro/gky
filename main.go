@@ -10,8 +10,8 @@ import (
 var (
 	Events                    = make(chan tcell.Event)
 	screen       tcell.Screen = nil
-	screenWidth               = 0
-	screenHeight              = 0
+	screenWidth  int
+	screenHeight int
 )
 
 func main() {
