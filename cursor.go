@@ -1,6 +1,8 @@
 package main
 
-import "github.com/gdamore/tcell"
+import (
+	"github.com/gdamore/tcell"
+)
 
 func (buf *Buffer) CursorMove(key MoveC) {
 	switch key {
@@ -22,11 +24,16 @@ func (buf *Buffer) CursorMove(key MoveC) {
 }
 
 func (buf *Buffer) scrollCursor() {
+	y := buf.getLine() - 1
+	if y > screenHeight {
+		y = screenHeight - 1
+	}
+
 	if buf.Cursor.y < 0 {
 		buf.Cursor.y = 0
 		buf.CursorRender()
-	} else if buf.Cursor.y >= screenHeight {
-		buf.Cursor.y = screenHeight - 1
+	} else if buf.Cursor.y >= y {
+		buf.Cursor.y = y
 		buf.CursorRender()
 	}
 
