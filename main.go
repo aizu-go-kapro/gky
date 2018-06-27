@@ -7,8 +7,10 @@ import (
 	"github.com/gdamore/tcell"
 )
 
+// by tenntenn 構造体にすることでパッケージ変数を減らせないか考えてみてくdさい
 var (
-	Events                    = make(chan tcell.Event)
+	Events = make(chan tcell.Event)
+	// by tenntenn 変数は明示的に初期化しなくてもゼロ値で初期化されている
 	screen       tcell.Screen = nil
 	screenWidth               = 0
 	screenHeight              = 0
@@ -28,7 +30,7 @@ func run(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	defer screen.Fini()
+	defer screen.Fini() // by tenntenn 略さない方がいい
 
 	initEvent()
 
@@ -44,6 +46,7 @@ func run(args []string) int {
 		return 1
 	}
 
+	// by tenntenn 別の関数にしてreturnで抜けたほうがわかりやすいかも
 loop:
 	for {
 		select {

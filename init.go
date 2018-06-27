@@ -5,6 +5,7 @@ import (
 	"github.com/gdamore/tcell/encoding"
 )
 
+// by tenntenn 初期化処理だとしても、極力パッケージ変数の初期化はしない
 func initScreen() error {
 	var err error
 	screen, err = tcell.NewScreen()
@@ -22,12 +23,15 @@ func initScreen() error {
 	screen.Clear()
 
 	screenWidth, screenHeight = screen.Size()
+	// by tenntenn この-2はなんだろう？
 	screen.Resize(0, 0, screenWidth, screenHeight-2)
 
 	return nil
 }
 
 func initEvent() {
+	// by tenntenn このゴールーチンを終わらせるための仕組みがない
+	// See: https://qiita.com/tenntenn/items/dd6041d630af7feeec52
 	go func() {
 		for {
 			if screen == nil {
@@ -39,11 +43,11 @@ func initEvent() {
 }
 
 func initBuffer(path string) (*Buffer, error) {
-	buf := new(Buffer)
+	buf := new(Buffer) // by tenntenn var buf Bufferでも使える
 	if err := buf.fileManage(path); err != nil {
 		return nil, err
 	}
 	buf.Cursor = NewLocation(0, 0)
 
-	return buf, nil
+	return buf, nil // by tenntenn var buf Bufferとした場合は&buf
 }

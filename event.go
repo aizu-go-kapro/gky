@@ -2,8 +2,11 @@ package main
 
 import "github.com/gdamore/tcell"
 
+// by tenntenn これはなんのための型？
 type MoveC interface{}
 
+// by tenntenn よくあるイベント駆動モデルを作ったほうが良さそう。
+// 一箇所にイベントの処理を書くと大変そう。
 func (v *View) EventHandle(ev *tcell.EventKey) error {
 	switch v.mode {
 	case Normal:
