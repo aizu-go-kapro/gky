@@ -2,15 +2,11 @@ package main
 
 import (
 	"fmt"
-	"math"
+	"io/ioutil"
 	"os"
 
 	"github.com/gdamore/tcell"
 	homedir "github.com/mitchellh/go-homedir"
-)
-
-const (
-	BUFSIZE = math.MaxInt32
 )
 
 type Location struct {
@@ -31,12 +27,10 @@ func NewLocation(l, c int) *Location {
 }
 
 func (buf *Buffer) Read(f *os.File) error {
-	b := make([]byte, BUFSIZE)
-	n, err := f.Read(b)
+	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		return err
 	}
-	b = b[:n]
 
 	var s []rune
 	for _, v := range b {
