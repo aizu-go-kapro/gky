@@ -30,7 +30,7 @@ func (v *View) NormalEvent(ev *tcell.EventKey) error {
 	case 'j', 'h', 'l', 'k':
 		v.buf.CursorMove(MoveC(ev.Rune()))
 	case 'i':
-		v.mode = 1
+		v.mode = Insert
 	}
 	return nil
 }
@@ -39,7 +39,7 @@ func (v *View) InsertEvent(ev *tcell.EventKey) error {
 	switch ev.Key() {
 	case tcell.KeyEsc:
 		// chage to Normal mode
-		v.mode = 0
+		v.mode = Normal
 	case tcell.KeyEnter:
 		v.buf.Insert([]rune{'\n'})
 
