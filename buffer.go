@@ -45,6 +45,36 @@ func (buf *Buffer) Insert(data []rune) {
 	}
 }
 
+func (buf *Buffer) Remove(length int) int {
+	lastCursor := 0
+
+	x, y := buf.Cursor.x, buf.Cursor.y
+
+	for i := 0; i < length; i++ {
+		if x == 0 {
+			n := len(buf.data[y-1])
+			restLength := screenWidth - n
+
+			if restLength > len(buf.data[y]) {
+				lastCursor = n + 1
+				// delete extra value
+				if n == 1 && byte(buf.data[y-1][0]) == '\n' {
+					buf.data[y-1] = buf.data[y-1][:len(buf.data[y-1])-1]
+				}
+
+				buf.data[y-1] = append(buf.data[y-1], buf.data[y]...)
+				buf.data = append(buf.data[:y], buf.data[y+1:]...)
+			} else {
+			}
+		} else {
+			buf.data[y] = append(buf.data[y][:x-1], buf.data[y][x:]...)
+			lastCursor = 0
+		}
+	}
+
+	return lastCursor
+}
+
 func (buf *Buffer) Read(f *os.File) error {
 	b := make([]byte, BUFSIZE)
 	n, err := f.Read(b)

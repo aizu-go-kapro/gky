@@ -46,8 +46,16 @@ func (v *View) InsertEvent(ev *tcell.EventKey) error {
 		// update cursor
 		v.buf.Cursor.x = 0
 		v.buf.CursorMove(MoveC('j'))
-	case tcell.KeyBackspace:
-		// [TODO] remove the data from buffer
+	case tcell.KeyBackspace2:
+		lastCursor := v.buf.Remove(1)
+		if lastCursor != 0 {
+			// update cursor
+			v.buf.Cursor.x = lastCursor - 2
+			v.buf.CursorMove(MoveC('k'))
+		} else {
+			// update cursor
+			v.buf.CursorMove(MoveC('h'))
+		}
 	default:
 		v.buf.Insert([]rune{ev.Rune()})
 
