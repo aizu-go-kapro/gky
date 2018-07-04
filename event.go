@@ -37,6 +37,8 @@ func (v *View) NormalEvent(ev *tcell.EventKey) error {
 
 func (v *View) InsertEvent(ev *tcell.EventKey) error {
 	switch ev.Key() {
+	case tcell.KeyLeft, tcell.KeyRight, tcell.KeyUp, tcell.KeyDown:
+		v.buf.CursorMove(MoveC(ev.Key()))
 	case tcell.KeyEsc:
 		// chage to Normal mode
 		v.mode = Normal
