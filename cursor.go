@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell"
 )
 
@@ -24,6 +26,8 @@ func (buf *Buffer) CursorMove(key MoveC) {
 }
 
 func (buf *Buffer) scrollCursor() {
+	line := len(fmt.Sprintf("%d", buf.getLine()))
+
 	y := buf.getLine() - 1
 	if y > screenHeight {
 		y = screenHeight - 1
@@ -37,10 +41,10 @@ func (buf *Buffer) scrollCursor() {
 		buf.CursorRender()
 	}
 
-	if buf.Cursor.x < 0 {
-		buf.Cursor.x = 0
-	} else if buf.Cursor.x >= len(buf.data[buf.render_y]) {
-		buf.Cursor.x = len(buf.data[buf.render_y]) - 1
+	if buf.Cursor.x < line+1 {
+		buf.Cursor.x = line + 1
+	} else if buf.Cursor.x >= len(buf.data[buf.render_y])+line {
+		buf.Cursor.x = len(buf.data[buf.render_y]) + line
 	}
 }
 

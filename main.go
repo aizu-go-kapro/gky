@@ -12,6 +12,11 @@ var (
 	screen       tcell.Screen = nil
 	screenWidth  int
 	screenHeight int
+	line_num     int
+)
+
+const (
+	offset = 49
 )
 
 func main() {
@@ -57,7 +62,7 @@ loop:
 					break loop
 				}
 			case *tcell.EventResize:
-				screenWidth, screenHeight = screen.Size()
+				screenWidth, screenHeight = ev.Size()
 				view.buf.Render(0)
 			}
 		}
