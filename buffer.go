@@ -2,15 +2,11 @@ package main
 
 import (
 	"fmt"
-	"math"
+	"io/ioutil"
 	"os"
 
 	"github.com/gdamore/tcell"
 	homedir "github.com/mitchellh/go-homedir"
-)
-
-const (
-	BUFSIZE = math.MaxInt32
 )
 
 type Location struct {
@@ -31,12 +27,10 @@ func NewLocation(l, c int) *Location {
 }
 
 func (buf *Buffer) Read(f *os.File) error {
-	b := make([]byte, BUFSIZE)
-	n, err := f.Read(b)
+	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		return err
 	}
-	b = b[:n]
 
 	var s []rune
 	for _, v := range b {
@@ -102,16 +96,38 @@ func (buf *Buffer) render(from int) {
 	if screenHeight < h {
 		h = screenHeight
 	}
+	line_num = from
 
 	for i := 0; i < h; i++ {
 		w := len(buf.data[from])
-		if screenWidth < w {
-			w = screenWidth
+
+		line := len(fmt.Sprintf("%d", buf.getLine()))
+		line += 1
+
+		l := fmt.Sprintf("%d", line_num+1)
+		for line_i, v := range l {
+			screen.SetContent(0+line_i, i, rune(v), nil, tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorSlateGray))
+			//TODO: ↓ fix
+			if len(fmt.Sprintf("%d", buf.getLine())) == 3 {
+				switch line_i {
+				case 0:
+					screen.SetContent(0+line_i+1, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
+					screen.SetContent(0+line_i+2, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
+					screen.SetContent(0+line_i+3, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
+				case 1:
+					screen.SetContent(0+line_i+1, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
+					screen.SetContent(0+line_i+2, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
+				case 2:
+					screen.SetContent(0+line_i+1, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
+				}
+			}
 		}
+
 		for j := 0; j < w; j++ {
-			screen.SetContent(j, i, buf.data[from][j], nil, tcell.StyleDefault)
+			screen.SetContent(j+line, i, buf.data[from][j], nil, tcell.StyleDefault.Foreground(tcell.ColorAqua))
 		}
 		from++
+		line_num++
 	}
 }
 

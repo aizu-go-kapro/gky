@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell"
 	"github.com/gdamore/tcell/encoding"
 )
@@ -22,7 +24,7 @@ func initScreen() error {
 	screen.Clear()
 
 	screenWidth, screenHeight = screen.Size()
-	screen.Resize(0, 0, screenWidth, screenHeight-2)
+	screen.Resize(0, 0, screenWidth, screenHeight)
 
 	return nil
 }
@@ -43,7 +45,9 @@ func initBuffer(path string) (*Buffer, error) {
 	if err := buf.fileManage(path); err != nil {
 		return nil, err
 	}
-	buf.Cursor = NewLocation(0, 0)
+
+	line := len(fmt.Sprintf("%d", buf.getLine()))
+	buf.Cursor = NewLocation(1+line, 0)
 
 	return buf, nil
 }
