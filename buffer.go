@@ -26,6 +26,57 @@ func NewLocation(l, c int) *Location {
 	return &Location{x: l, y: c}
 }
 
+func (buf *Buffer) Insert(data []rune) {
+	x, y := buf.Cursor.x, buf.Cursor.y
+
+	for i := len(data) - 1; i >= 0; i-- {
+		char := data[i]
+		if byte(char) == '\n' {
+			tmp := append([]rune(nil), buf.data[y][x:]...)
+			buf.data[y] = buf.data[y][:x]
+			buf.data = append(buf.data[:y+1], append([][]rune{tmp}, buf.data[y+1:]...)...)
+		} else {
+			buf.data[y] = append(buf.data[y][:x], append([]rune{char}, buf.data[y][x:]...)...)
+		}
+	}
+}
+
+func (buf *Buffer) Remove(length int) int {
+	lastCursor := 0
+
+	x, y := buf.Cursor.x, buf.Cursor.y
+
+	for i := 0; i < length; i++ {
+		if x == 0 {
+			n := len(buf.data[y-1])
+			restLength := screenWidth - n
+
+			if restLength > len(buf.data[y]) {
+				lastCursor = n + 1
+				// delete extra value
+				if n == 1 && byte(buf.data[y-1][0]) == '\n' {
+					buf.data[y-1] = buf.data[y-1][:len(buf.data[y-1])-1]
+				}
+
+				buf.data[y-1] = append(buf.data[y-1], buf.data[y]...)
+				buf.data = append(buf.data[:y], buf.data[y+1:]...)
+			} else {
+				// insert
+				buf.data[y-1] = append(buf.data[y-1], buf.data[y][:restLength]...)
+
+				// [TODO] delete from buf.data[y-1]
+
+				buf.data = append(buf.data[:y], buf.data[y+1:]...)
+			}
+		} else {
+			buf.data[y] = append(buf.data[y][:x-1], buf.data[y][x:]...)
+			lastCursor = 0
+		}
+	}
+
+	return lastCursor
+}
+
 func (buf *Buffer) Read(f *os.File) error {
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
