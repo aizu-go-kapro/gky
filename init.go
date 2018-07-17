@@ -46,8 +46,8 @@ func initBuffer(path string) (*Buffer, error) {
 		return nil, err
 	}
 
-	line := len(fmt.Sprintf("%d", buf.getLine()))
-	buf.Cursor = NewLocation(1+line, 0)
+	line_len = len(fmt.Sprintf("%d", buf.getLine())) + 1
+	buf.Cursor = NewLocation(line_len, 0)
 
 	return buf, nil
 }

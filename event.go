@@ -52,7 +52,7 @@ func (v *View) InsertEvent(ev *tcell.EventKey) error {
 		lastCursor := v.buf.Remove(1)
 		if lastCursor != 0 {
 			// update cursor
-			v.buf.Cursor.x = lastCursor - 2
+			v.buf.Cursor.x = lastCursor
 			v.buf.CursorMove(MoveC('k'))
 		} else {
 			// update cursor

@@ -27,7 +27,7 @@ func NewLocation(l, c int) *Location {
 }
 
 func (buf *Buffer) Insert(data []rune) {
-	x, y := buf.Cursor.x, buf.Cursor.y
+	x, y := buf.Cursor.x-line_len, buf.Cursor.y
 
 	for i := len(data) - 1; i >= 0; i-- {
 		char := data[i]
@@ -44,7 +44,7 @@ func (buf *Buffer) Insert(data []rune) {
 func (buf *Buffer) Remove(length int) int {
 	lastCursor := 0
 
-	x, y := buf.Cursor.x, buf.Cursor.y
+	x, y := buf.Cursor.x-line_len, buf.Cursor.y
 
 	for i := 0; i < length; i++ {
 		if x == 0 {
@@ -147,12 +147,12 @@ func (buf *Buffer) render(from int) {
 	if screenHeight < h {
 		h = screenHeight
 	}
-	line_num = from
+	line_num := from
 
-	line := len(fmt.Sprintf("%d", buf.getLine())) + 1
+	line_len = len(fmt.Sprintf("%d", buf.getLine())) + 1
 
 	for i := 0; i < h; i++ {
-		for j := line; j > 0; j-- {
+		for j := line_len; j > 0; j-- {
 			screen.SetContent(0+j, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
 		}
 	}
@@ -166,7 +166,7 @@ func (buf *Buffer) render(from int) {
 		}
 
 		for j := 0; j < w; j++ {
-			screen.SetContent(j+line, i, buf.data[from][j], nil, tcell.StyleDefault.Foreground(tcell.ColorAqua))
+			screen.SetContent(j+line_len, i, buf.data[from][j], nil, tcell.StyleDefault.Foreground(tcell.ColorAqua))
 		}
 		from++
 		line_num++

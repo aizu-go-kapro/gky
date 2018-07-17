@@ -12,7 +12,7 @@ var (
 	screen       tcell.Screen = nil
 	screenWidth  int
 	screenHeight int
-	line_num     int
+	line_len     int
 )
 
 func main() {
