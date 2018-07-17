@@ -65,6 +65,12 @@ func (buf *Buffer) Remove(length int) int {
 				buf.data[y-1] = append(buf.data[y-1], buf.data[y]...)
 				buf.data = append(buf.data[:y], buf.data[y+1:]...)
 			} else {
+				// insert
+				buf.data[y-1] = append(buf.data[y-1], buf.data[y][:restLength]...)
+
+				// [TODO] delete from buf.data[y-1]
+
+				buf.data = append(buf.data[:y], buf.data[y+1:]...)
 			}
 		} else {
 			buf.data[y] = append(buf.data[y][:x-1], buf.data[y][x:]...)
