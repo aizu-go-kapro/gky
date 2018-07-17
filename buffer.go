@@ -98,29 +98,20 @@ func (buf *Buffer) render(from int) {
 	}
 	line_num = from
 
+	line := len(fmt.Sprintf("%d", buf.getLine())) + 1
+
+	for i := 0; i < h; i++ {
+		for j := line; j > 0; j-- {
+			screen.SetContent(0+j, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
+		}
+	}
+
 	for i := 0; i < h; i++ {
 		w := len(buf.data[from])
-
-		line := len(fmt.Sprintf("%d", buf.getLine()))
-		line += 1
 
 		l := fmt.Sprintf("%d", line_num+1)
 		for line_i, v := range l {
 			screen.SetContent(0+line_i, i, rune(v), nil, tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorSlateGray))
-			//TODO: ↓ fix
-			if len(fmt.Sprintf("%d", buf.getLine())) == 3 {
-				switch line_i {
-				case 0:
-					screen.SetContent(0+line_i+1, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
-					screen.SetContent(0+line_i+2, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
-					screen.SetContent(0+line_i+3, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
-				case 1:
-					screen.SetContent(0+line_i+1, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
-					screen.SetContent(0+line_i+2, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
-				case 2:
-					screen.SetContent(0+line_i+1, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
-				}
-			}
 		}
 
 		for j := 0; j < w; j++ {
