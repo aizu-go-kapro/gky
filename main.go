@@ -15,10 +15,6 @@ var (
 	line_num     int
 )
 
-const (
-	offset = 49
-)
-
 func main() {
 	os.Exit(run(os.Args))
 }
