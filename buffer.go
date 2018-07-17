@@ -20,6 +20,7 @@ type Buffer struct {
 	path     string
 	Cursor   *Location
 	render_y int
+	exist    bool
 }
 
 func NewLocation(l, c int) *Location {
@@ -93,43 +94,45 @@ func (buf *Buffer) Read(f *os.File) error {
 		}
 		s = append(s, rune(v))
 	}
-
-	return nil
-}
-
-func (buf *Buffer) open() error {
-	f, err := os.Open(buf.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	buf.Name = f.Name()
-
-	if err := buf.Read(f); err != nil {
-		return err
+	if buf.data == nil {
+		buf.data = append(buf.data, []rune{' '})
 	}
 
 	return nil
 }
 
 func (buf *Buffer) fileManage(path string) error {
+	var f *os.File
+
 	namepath, err := homedir.Expand(path)
 	if err != nil {
 		return err
 	}
 	buf.path = namepath
 
-	info, err := os.Stat(path)
+	info, err := os.Stat(buf.path)
 	if err != nil {
-		return err
+		f, err = os.OpenFile(buf.path, os.O_RDWR|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		buf.exist = false
+	} else {
+		f, err = os.Open(buf.path)
+		if err != nil {
+			return err
+		}
+		buf.exist = true
 	}
+	defer f.Close()
+	buf.Name = f.Name()
 
+	info, _ = os.Stat(buf.path)
 	if info.IsDir() {
 		return fmt.Errorf("%s is a directory", path)
 	}
 
-	if err := buf.open(); err != nil {
+	if err := buf.Read(f); err != nil {
 		return err
 	}
 

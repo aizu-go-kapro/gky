@@ -52,6 +52,9 @@ loop:
 			switch ev := ev.(type) {
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyCtrlQ {
+					if !view.buf.exist {
+						os.Remove(view.buf.path)
+					}
 					break loop
 				} else if err := view.EventHandle(ev); err != nil {
 					fmt.Fprintln(os.Stderr, err)
