@@ -181,3 +181,18 @@ func (buf *Buffer) render(from int) {
 func (buf *Buffer) getLine() int {
 	return len(buf.data)
 }
+
+func (buf *Buffer) Save() error {
+	var bytes []byte
+	for i, _ := range buf.data {
+		for _, v := range buf.data[i] {
+			bytes = append(bytes, byte(v))
+		}
+		bytes = append(bytes, byte('\n'))
+	}
+	if err := ioutil.WriteFile(buf.path, bytes, 0644); err != nil {
+		return err
+	}
+	buf.exist = true
+	return nil
+}
