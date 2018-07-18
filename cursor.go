@@ -25,6 +25,28 @@ func (buf *Buffer) CursorMove(key MoveC) {
 	screen.Show()
 }
 
+func (buf *Buffer) CursorMoveVisual(key MoveC) {
+	switch key {
+	case tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyLeft, 'h':
+		buf.Cursor.x--
+	case tcell.KeyRight, 'l':
+		buf.Cursor.x++
+	case tcell.KeyUp, 'k':
+		buf.Cursor.y--
+		buf.render_y--
+	case tcell.KeyDown, tcell.KeyEnter, 'j':
+		buf.Cursor.y++
+		buf.render_y++
+	}
+
+	buf.scrollCursor()
+	buf.SetStyleHighlight()
+	buf.SetStyleDefault()
+	buf.SetHighlightEnd()
+	buf.setCursor()
+	screen.Show()
+}
+
 func (buf *Buffer) scrollCursor() {
 	line := len(fmt.Sprintf("%d", buf.getLine()))
 

@@ -15,12 +15,14 @@ type Location struct {
 }
 
 type Buffer struct {
-	data     [][]rune
-	Name     string
-	path     string
-	Cursor   *Location
-	render_y int
-	exist    bool
+	data            [][]rune
+	Name            string
+	path            string
+	Cursor          *Location
+	HighlightBegine *Location
+	HighlightEnd    *Location
+	render_y        int
+	exist           bool
 }
 
 func NewLocation(l, c int) *Location {
