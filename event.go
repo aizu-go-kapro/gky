@@ -1,6 +1,10 @@
 package main
 
-import "github.com/gdamore/tcell"
+import (
+	"fmt"
+
+	"github.com/gdamore/tcell"
+)
 
 type MoveC interface{}
 
@@ -15,6 +19,11 @@ func (v *View) EventHandle(ev *tcell.EventKey) error {
 			return err
 		}
 	case Visual:
+		spaces := len(fmt.Sprintf("%d", len(v.buf.data))) + 1
+		screen.SetContent(v.buf.Cursor.x, v.buf.Cursor.y, v.buf.data[v.buf.Cursor.y][v.buf.Cursor.x-spaces], nil, tcell.StyleDefault.Reverse(true))
+		if err := v.VisualEvnet(ev); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -31,6 +40,28 @@ func (v *View) NormalEvent(ev *tcell.EventKey) error {
 		v.buf.CursorMove(MoveC(ev.Rune()))
 	case 'i':
 		v.mode = Insert
+	case 'v':
+		v.mode = Visual
+	}
+	return nil
+}
+
+func (v *View) VisualEvnet(ev *tcell.EventKey) error {
+	v.buf.SetHighlightBegine()
+	v.buf.SetHighlightEnd()
+
+	switch ev.Key() {
+	case tcell.KeyEsc:
+		v.ExitVisualMode()
+	case tcell.KeyBackspace, tcell.KeyLeft, tcell.KeyRight, tcell.KeyUp, tcell.KeyDown, tcell.KeyEnter:
+		v.buf.CursorMoveVisual(MoveC(ev.Key()))
+	}
+	switch ev.Rune() {
+	case 'j', 'h', 'l', 'k':
+		//選択部分の色を反転させる処理
+		v.buf.CursorMoveVisual(MoveC(ev.Rune()))
+	case 'y':
+		v.Yank()
 	}
 	return nil
 }
