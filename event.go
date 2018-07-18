@@ -23,6 +23,10 @@ func (v *View) NormalEvent(ev *tcell.EventKey) error {
 	switch ev.Key() {
 	case tcell.KeyBackspace, tcell.KeyLeft, tcell.KeyRight, tcell.KeyUp, tcell.KeyDown, tcell.KeyEnter:
 		v.buf.CursorMove(MoveC(ev.Key()))
+	case tcell.KeyCtrlS:
+		if err := v.buf.Save(); err != nil {
+			return err
+		}
 	default:
 	}
 
@@ -31,6 +35,7 @@ func (v *View) NormalEvent(ev *tcell.EventKey) error {
 		v.buf.CursorMove(MoveC(ev.Rune()))
 	case 'i':
 		v.mode = Insert
+
 	}
 	return nil
 }
