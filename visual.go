@@ -24,19 +24,11 @@ func (buf *Buffer) ClearHighlight() {
 }
 
 func isAhead(buf *Buffer) bool {
-	if buf.Cursor.y > buf.HighlightBegine.y || (buf.Cursor.y == buf.HighlightBegine.y && buf.Cursor.x > buf.HighlightBegine.x) {
-		return true
-	} else {
-		return false
-	}
+	return buf.Cursor.y > buf.HighlightBegine.y || (buf.Cursor.y == buf.HighlightBegine.y && buf.Cursor.x > buf.HighlightBegine.x)
 }
 
 func isEqualLine(c1, c2 *Location) bool {
-	if c1.y == c2.y {
-		return true
-	} else {
-		return false
-	}
+	return c1.y == c2.y
 }
 
 func highlightLine(start int, end int, line int, buf *Buffer, isReverse bool) {

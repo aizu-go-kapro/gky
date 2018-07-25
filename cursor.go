@@ -14,10 +14,10 @@ func (buf *Buffer) CursorMove(key MoveC) {
 		buf.Cursor.x++
 	case tcell.KeyUp, 'k':
 		buf.Cursor.y--
-		buf.render_y--
+		buf.renderY--
 	case tcell.KeyDown, tcell.KeyEnter, 'j':
 		buf.Cursor.y++
-		buf.render_y++
+		buf.renderY++
 	}
 
 	buf.scrollCursor()
@@ -33,10 +33,10 @@ func (buf *Buffer) CursorMoveVisual(key MoveC) {
 		buf.Cursor.x++
 	case tcell.KeyUp, 'k':
 		buf.Cursor.y--
-		buf.render_y--
+		buf.renderY--
 	case tcell.KeyDown, tcell.KeyEnter, 'j':
 		buf.Cursor.y++
-		buf.render_y++
+		buf.renderY++
 	}
 
 	buf.scrollCursor()
@@ -65,19 +65,19 @@ func (buf *Buffer) scrollCursor() {
 
 	if buf.Cursor.x < line+1 {
 		buf.Cursor.x = line + 1
-	} else if buf.Cursor.x >= len(buf.data[buf.render_y])+line {
-		buf.Cursor.x = len(buf.data[buf.render_y]) + line
+	} else if buf.Cursor.x >= len(buf.data[buf.renderY])+line {
+		buf.Cursor.x = len(buf.data[buf.renderY]) + line
 	}
 }
 
 func (buf *Buffer) CursorRender() {
 	line := buf.getLine() - 1
-	if buf.render_y <= line && buf.render_y >= 0 {
-		buf.Render(buf.render_y - buf.Cursor.y)
-	} else if buf.render_y > line {
-		buf.render_y = line
+	if buf.renderY <= line && buf.renderY >= 0 {
+		buf.Render(buf.renderY - buf.Cursor.y)
+	} else if buf.renderY > line {
+		buf.renderY = line
 	} else {
-		buf.render_y = 0
+		buf.renderY = 0
 	}
 }
 

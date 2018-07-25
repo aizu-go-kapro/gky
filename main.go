@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	Events                    = make(chan tcell.Event)
-	screen       tcell.Screen = nil
+	Events       = make(chan tcell.Event)
+	screen       tcell.Screen
 	screenWidth  int
 	screenHeight int
-	line_len     int
+	lineLen      int
 )
 
 func main() {
