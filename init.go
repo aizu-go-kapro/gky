@@ -46,8 +46,8 @@ func initBuffer(path string) (*Buffer, error) {
 		return nil, err
 	}
 
-	line_len = len(fmt.Sprintf("%d", buf.getLine())) + 1
-	buf.Cursor = NewLocation(line_len, 0)
+	lineLen = len(fmt.Sprintf("%d", buf.getLine())) + 1
+	buf.Cursor = NewLocation(lineLen, 0)
 	buf.HighlightBegine = NewLocation(-1, -1)
 	buf.HighlightEnd = NewLocation(-1, -1)
 

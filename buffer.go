@@ -21,7 +21,7 @@ type Buffer struct {
 	Cursor          *Location
 	HighlightBegine *Location
 	HighlightEnd    *Location
-	render_y        int
+	renderY         int
 	exist           bool
 }
 
@@ -30,7 +30,7 @@ func NewLocation(l, c int) *Location {
 }
 
 func (buf *Buffer) Insert(data []rune) {
-	x, y := buf.Cursor.x-line_len, buf.Cursor.y
+	x, y := buf.Cursor.x-lineLen, buf.Cursor.y
 
 	for i := len(data) - 1; i >= 0; i-- {
 		char := data[i]
@@ -47,7 +47,7 @@ func (buf *Buffer) Insert(data []rune) {
 func (buf *Buffer) Remove(length int) int {
 	lastCursor := 0
 
-	x, y := buf.Cursor.x-line_len, buf.Cursor.y
+	x, y := buf.Cursor.x-lineLen, buf.Cursor.y
 
 	for i := 0; i < length; i++ {
 		if x == 0 {
@@ -152,12 +152,12 @@ func (buf *Buffer) render(from int) {
 	if screenHeight < h {
 		h = screenHeight
 	}
-	line_num := from
+	lineNum := from
 
-	line_len = len(fmt.Sprintf("%d", buf.getLine())) + 1
+	lineLen = len(fmt.Sprintf("%d", buf.getLine())) + 1
 
 	for i := 0; i < h; i++ {
-		for j := line_len; j > 0; j-- {
+		for j := lineLen; j > 0; j-- {
 			screen.SetContent(0+j, i, ' ', nil, tcell.StyleDefault.Background(tcell.ColorSlateGray))
 		}
 	}
@@ -165,16 +165,16 @@ func (buf *Buffer) render(from int) {
 	for i := 0; i < h; i++ {
 		w := len(buf.data[from])
 
-		l := fmt.Sprintf("%d", line_num+1)
-		for line_i, v := range l {
-			screen.SetContent(0+line_i, i, rune(v), nil, tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorSlateGray))
+		l := fmt.Sprintf("%d", lineNum+1)
+		for lineI, v := range l {
+			screen.SetContent(0+lineI, i, rune(v), nil, tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorSlateGray))
 		}
 
 		for j := 0; j < w; j++ {
-			screen.SetContent(j+line_len, i, buf.data[from][j], nil, tcell.StyleDefault.Foreground(tcell.ColorAqua))
+			screen.SetContent(j+lineLen, i, buf.data[from][j], nil, tcell.StyleDefault.Foreground(tcell.ColorAqua))
 		}
 		from++
-		line_num++
+		lineNum++
 	}
 }
 
@@ -184,7 +184,7 @@ func (buf *Buffer) getLine() int {
 
 func (buf *Buffer) Save() error {
 	var bytes []byte
-	for i, _ := range buf.data {
+	for i := range buf.data {
 		for _, v := range buf.data[i] {
 			bytes = append(bytes, byte(v))
 		}
