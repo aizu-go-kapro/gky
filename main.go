@@ -21,7 +21,7 @@ func main() {
 
 func run(args []string) int {
 	if len(args) != 2 {
-		fmt.Fprint(os.Stderr, "Usage: gky <filename>\n")
+		fmt.Fprintln(os.Stderr, "Usage: gky <filename>")
 		return 1
 	}
 
@@ -45,25 +45,21 @@ func run(args []string) int {
 		return 1
 	}
 
-loop:
-	for {
-		select {
-		case ev := <-Events:
-			switch ev := ev.(type) {
-			case *tcell.EventKey:
-				if ev.Key() == tcell.KeyCtrlQ {
-					if !view.buf.exist {
-						os.Remove(view.buf.path)
-					}
-					break loop
-				} else if err := view.EventHandle(ev); err != nil {
-					fmt.Fprintln(os.Stderr, err)
-					break loop
+	for ev := range Events {
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			if ev.Key() == tcell.KeyCtrlQ {
+				if !view.buf.exist {
+					os.Remove(view.buf.path)
 				}
-			case *tcell.EventResize:
-				screenWidth, screenHeight = ev.Size()
-				view.buf.Render(0)
+				break
+			} else if err := view.EventHandle(ev); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				break
 			}
+		case *tcell.EventResize:
+			screenWidth, screenHeight = ev.Size()
+			view.buf.Render(0)
 		}
 	}
 	return 0
